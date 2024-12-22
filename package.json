@@ -3,8 +3,12 @@
   "version": "1.0.0",
   "description": "A web app to identify and remove duplicate questions from docs files",
   "main": "app.js",
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
-    "start": "node app.js"
+    "start": "node app.js",
+    "dev": "node app.js"
   },
   "dependencies": {
     "express": "^4.18.2",
