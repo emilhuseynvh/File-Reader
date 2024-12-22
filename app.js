@@ -2,7 +2,6 @@ const express = require('express');
 const multer = require('multer');
 const mammoth = require('mammoth');
 const path = require('path');
-const fs = require('fs');
 
 const app = express();
 
@@ -15,11 +14,6 @@ const upload = multer({
 });
 
 app.use(express.static('public'));
-
-// Create uploads directory if it doesn't exist
-if (!fs.existsSync('uploads')) {
-    fs.mkdirSync('uploads');
-}
 
 // Function to extract questions from text
 function extractQuestions(text) {
