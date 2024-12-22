@@ -5,7 +5,14 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-const upload = multer({ dest: 'uploads/' });
+
+// Configure multer to use memory storage instead of disk
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB limit
+    }
+});
 
 app.use(express.static('public'));
 
@@ -57,20 +64,13 @@ app.post('/upload', upload.array('docFiles', 10), async (req, res) => {
             console.log(`Processing file: ${file.originalname}`);
             try {
                 const result = await mammoth.extractRawText({
-                    path: file.path
+                    buffer: file.buffer // Use buffer instead of file path
                 });
                 console.log(`Successfully extracted text from: ${file.originalname}`);
                 allText += result.value + '\n\n';
             } catch (fileError) {
                 console.error(`Error processing file ${file.originalname}:`, fileError);
                 throw new Error(`Failed to process file ${file.originalname}: ${fileError.message}`);
-            } finally {
-                // Clean up uploaded file
-                try {
-                    fs.unlinkSync(file.path);
-                } catch (unlinkError) {
-                    console.error(`Error deleting temporary file ${file.path}:`, unlinkError);
-                }
             }
         }
 
