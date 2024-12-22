@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question Deduplicator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .upload-section {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .results {
+            margin-top: 20px;
+        }
+        .question {
+            padding: 10px;
+            margin: 5px 0;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .stats {
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+        }
+        .drop-zone {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            transition: border-color 0.3s ease;
+        }
+        .drop-zone.dragover {
+            border-color: #007bff;
+            background-color: rgba(0,123,255,0.1);
+        }
+        .selected-files {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        #uploadForm {
+            margin: 20px 0;
+        }
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Question Deduplicator</h1>
+        <div class="upload-section">
+            <div class="drop-zone" id="dropZone">
+                <p>Drop multiple .doc/.docx files here or</p>
+                <form id="uploadForm">
+                    <input type="file" id="docFiles" name="docFiles" accept=".doc,.docx" multiple required>
+                    <button type="submit">Process Files</button>
+                </form>
+            </div>
+            <div class="selected-files" id="selectedFiles"></div>
+            <div class="loading" id="loading">Processing...</div>
+        </div>
+        <div class="stats" id="stats"></div>
+        <div class="results" id="results"></div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const uploadForm = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('docFiles');
+        const selectedFiles = document.getElementById('selectedFiles');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const stats = document.getElementById('stats');
+
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+
+        // Highlight drop zone when dragging over it
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function highlight(e) {
+            dropZone.classList.add('dragover');
+        }
+
+        function unhighlight(e) {
+            dropZone.classList.remove('dragover');
+        }
+
+        // Handle dropped files
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            fileInput.files = files;
+            updateFileList();
+        }
+
+        // Handle file input change
+        fileInput.addEventListener('change', updateFileList);
+
+        function updateFileList() {
+            const files = fileInput.files;
+            selectedFiles.innerHTML = Array.from(files)
+                .map(file => `<div>${file.name}</div>`)
+                .join('');
+        }
+
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Please select files');
+                return;
+            }
+
+            loading.style.display = 'block';
+            results.innerHTML = '';
+            stats.innerHTML = '';
+
+            const formData = new FormData();
+            Array.from(fileInput.files).forEach(file => {
+                formData.append('docFiles', file);
+            });
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Upload failed');
+                }
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.details || data.error);
+                }
+                
+                // Display stats
+                stats.innerHTML = `
+                    <strong>Statistics:</strong><br>
+                    Files processed: ${data.filesProcessed}<br>
+                    Original questions: ${data.originalCount}<br>
+                    Unique questions: ${data.uniqueCount}<br>
+                    Duplicates removed: ${data.originalCount - data.uniqueCount}
+                `;
+
+                // Display questions
+                results.innerHTML = '<strong>Unique Questions:</strong><br>' + 
+                    data.questions.map((q, i) => `
+                        <div class="question">${i + 1}. ${q}</div>
+                    `).join('');
+
+            } catch (error) {
+                console.error('Error:', error);
+                results.innerHTML = `<div style="color: red; padding: 10px; background-color: #ffebee; border-radius: 4px;">
+                    <strong>Error processing files:</strong><br>
+                    ${error.message || 'Please try again with valid .doc or .docx files'}
+                </div>`;
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
