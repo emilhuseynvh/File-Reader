@@ -13,7 +13,13 @@ const upload = multer({
     }
 });
 
-app.use(express.static('public'));
+// Serve static files from the public directory
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Root route handler
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // Function to extract questions from text
 function extractQuestions(text) {
