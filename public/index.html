@@ -91,13 +91,11 @@
         const results = document.getElementById('results');
         const stats = document.getElementById('stats');
 
-        // Prevent default drag behaviors
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             dropZone.addEventListener(eventName, preventDefaults, false);
             document.body.addEventListener(eventName, preventDefaults, false);
         });
 
-        // Highlight drop zone when dragging over it
         ['dragenter', 'dragover'].forEach(eventName => {
             dropZone.addEventListener(eventName, highlight, false);
         });
@@ -119,7 +117,6 @@
             dropZone.classList.remove('dragover');
         }
 
-        // Handle dropped files
         dropZone.addEventListener('drop', handleDrop, false);
 
         function handleDrop(e) {
@@ -129,7 +126,6 @@
             updateFileList();
         }
 
-        // Handle file input change
         fileInput.addEventListener('change', updateFileList);
 
         function updateFileList() {
@@ -172,16 +168,14 @@
                     throw new Error(data.details || data.error);
                 }
                 
-                // Display stats
                 stats.innerHTML = `
                     <strong>Statistics:</strong><br>
                     Files processed: ${data.filesProcessed}<br>
                     Original questions: ${data.originalCount}<br>
-                    Unique questions: ${data.uniqueCount}<br>
+                    Distinct questions: ${data.uniqueCount}<br>
                     Duplicates removed: ${data.originalCount - data.uniqueCount}
                 `;
 
-                // Display questions
                 results.innerHTML = '<strong>Unique Questions:</strong><br>' + 
                     data.questions.map((q, i) => `
                         <div class="question">${i + 1}. ${q}</div>

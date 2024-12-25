@@ -5,25 +5,20 @@ const path = require('path');
 
 const app = express();
 
-// Configure multer to use memory storage instead of disk
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB limit
+        fileSize: 5 * 1024 * 1024
     }
 });
 
-// Serve static files from the public directory
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Root route handler
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Function to extract questions from text
 function extractQuestions(text) {
-    // Split text into lines and identify questions
     const lines = text.split('\n');
     const questions = lines.filter(line => 
         line.trim().length > 0 && 
@@ -32,7 +27,6 @@ function extractQuestions(text) {
     return questions;
 }
 
-// Function to remove duplicates keeping first occurrence
 function removeDuplicates(questions) {
     const seen = new Set();
     return questions.filter(question => {
@@ -53,9 +47,7 @@ app.post('/upload', upload.array('docFiles', 10), async (req, res) => {
 
         let allText = '';
         
-        // Process each file and combine their content
         for (const file of req.files) {
-            // Check file extension
             const fileExt = path.extname(file.originalname).toLowerCase();
             if (fileExt !== '.doc' && fileExt !== '.docx') {
                 throw new Error(`Invalid file type: ${fileExt}. Only .doc and .docx files are supported.`);
@@ -64,7 +56,7 @@ app.post('/upload', upload.array('docFiles', 10), async (req, res) => {
             console.log(`Processing file: ${file.originalname}`);
             try {
                 const result = await mammoth.extractRawText({
-                    buffer: file.buffer // Use buffer instead of file path
+                    buffer: file.buffer
                 });
                 console.log(`Successfully extracted text from: ${file.originalname}`);
                 allText += result.value + '\n\n';
@@ -74,14 +66,12 @@ app.post('/upload', upload.array('docFiles', 10), async (req, res) => {
             }
         }
 
-        // Extract questions and remove duplicates
         const questions = extractQuestions(allText);
         const uniqueQuestions = removeDuplicates(questions);
 
         console.log(`Processed ${req.files.length} files`);
         console.log(`Found ${questions.length} questions, ${uniqueQuestions.length} unique`);
 
-        // Send back the processed questions
         res.json({
             originalCount: questions.length,
             uniqueCount: uniqueQuestions.length,
